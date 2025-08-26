@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login with QR Code · Echo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Force black text inside phone input */
+    .iti input,
+    .iti input::placeholder {
+      background-color: #fff !important;
+      color: #000 !important;
+    }
+
+    /* Dropdown: white background + black text */
+    .iti__country-list {
+      background-color: #fff !important;
+      color: #000 !important;
+    }
+
+    /* Each country item */
+    .iti__country {
+      color: #000 !important;
+    }
+
+    /* Selected country dial code + flag inside input */
+    .iti__selected-dial-code {
+      color: #000 !important;
+    }
+  </style>
+  <!-- intl-tel-input (CDN) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@19.2.18/build/css/intlTelInput.css" />
+  <style>html{scroll-behavior:smooth}</style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-50">
+  <main class="mx-auto max-w-md px-4 py-12">
+    <h1 class="text-2xl font-bold mb-6 text-center">Login with QR Code</h1>
+
+    <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-6 shadow-xl">
+      <label for="phone" class="block text-sm text-slate-300 mb-1">WhatsApp Number</label>
+      <input id="phone" type="tel" autocomplete="tel"
+             class="w-full rounded-xl bg-slate-800 border border-white/10 px-3 py-2 mb-2" />
+
+      <p class="text-xs text-slate-400 mb-4">
+        Enter your phone number and choose a country. It will be sent in international format (E.164) without the “+”.
+      </p>
+
+      <div class="flex items-start mb-4">
+        <input id="agree" type="checkbox" 
+               class="mt-1 mr-2 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500">
+        <label for="agree" class="text-xs text-slate-400">
+          By continuing, you agree to our 
+          <a href="/terms" target="_blank" class="underline hover:text-slate-200">Terms of Service</a> 
+          and 
+          <a href="/privacy" target="_blank" class="underline hover:text-slate-200">Privacy Policy</a>.
+        </label>
+      </div>
+      
+      <button id="login-btn" type="button" onclick="startLogin()"
+              class="block w-full text-center rounded-2xl bg-green-600 hover:bg-green-500 py-3 text-base font-medium">
+        Login with QR Code
+      </button>
+
+      <!-- Spinner -->
+      <div id="spinner" class="flex items-center justify-center mt-4" style="display:none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <span class="ml-2 text-sm text-slate-300">Loading…</span>
+      </div>
+
+      <!-- QR -->
+      <div id="qr-wrap" class="mt-6">
+        <p class="text-sm text-slate-300 mb-2">Scan the code using WhatsApp on your phone:</p>
+        <img id="qr-image" alt="QR" class="mx-auto rounded-xl border border-white/10 shadow-lg" style="display:none" />
+      </div>
+
+      <!-- Success message -->
+<div id="success-wrap" class="mt-6 hidden text-center">
+  <p class="text-lg text-green-400 font-semibold">✅ Connected successfully!</p>
+  <p class="text-sm text-slate-300">You can now use Echo with your WhatsApp.</p>
+</div>
+
+      <p id="qr-error" class="hidden text-sm text-red-400 mt-3"></p>
+      <button id="retry-btn"
+              class="hidden mt-2 w-full rounded-xl border border-red-400 text-red-300 py-2 text-sm hover:bg-red-500/20">
+        Retry
+      </button>
+      
+
+      <p class="text-xs text-slate-400 mt-4">Tip: If the code expires, click the button again to refresh.</p>
+    </div>
+  </main>
+
+  <!-- JS (placed at end so DOM exists) -->
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@19.2.18/build/js/intlTelInput.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@19.2.18/build/js/utils.js" defer></script>
+  <script>
+    let iti;
+    let pollId = null;
+  
+    window.addEventListener("DOMContentLoaded", function () {
+      const input = document.getElementById("phone");
+      iti = window.intlTelInput(input, {
+        initialCountry: "il",
+        nationalMode: false,
+        separateDialCode: true,
+      });
+    });
+  
+    function showError(msg) {
+      alert(msg);
+    }
+  
+    function resetUI(originalText) {
+      document.getElementById("spinner").style.display = "none";
+      document.getElementById("qr-image").style.display = "none";
+      const loginBtn = document.getElementById("login-btn");
+      loginBtn.disabled = false;
+      loginBtn.innerText = originalText;
+    }
+  
+    const retryBtn = document.getElementById("retry-btn");
+
+function showErrorMsg(msg, showRetry = true) {
+  const qrError = document.getElementById("qr-error");
+  qrError.innerText = msg;
+  qrError.classList.remove("hidden");
+
+  if (showRetry) retryBtn.classList.remove("hidden");
+  else retryBtn.classList.add("hidden");
+}
+
+function hideErrorMsg() {
+  document.getElementById("qr-error").classList.add("hidden");
+  retryBtn.classList.add("hidden");
+}
+
+async function startLogin() {
+  const agree = document.getElementById("agree");
+  if (!agree.checked) {
+    showError("Please accept the Terms & Privacy Policy before continuing.");
+    return;
+  }
+
+  const qrImg    = document.getElementById("qr-image");
+  const spinner  = document.getElementById("spinner");
+  const loginBtn = document.getElementById("login-btn");
+  const originalText = "Login with QR Code";
+
+  // clear old state
+  if (pollId) {
+    clearInterval(pollId);
+    pollId = null;
+  }
+  qrImg.style.display = "none";
+  hideErrorMsg();
+
+  if (!iti || !iti.isValidNumber()) {
+    showError("Please enter a valid number and select the correct country.");
+    return;
+  }
+
+  const e164NoPlus = iti.getNumber().replace(/^\+/, "");
+
+  spinner.style.display = "flex";
+  loginBtn.disabled = true;
+  loginBtn.innerText = "Loading...";
+
+  try {
+    const res = await fetch("/login-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: e164NoPlus })
+    });
+
+    if (!res.ok) throw new Error(`login-user failed: ${res.status}`);
+    const data = await res.json();
+
+    spinner.style.display = "none";
+
+    if (data.status === "connected") {
+      // user already logged in
+      loginBtn.innerText = "Connected ✅";
+      document.getElementById("success-wrap").classList.remove("hidden");
+      return;
+    }
+
+    if (data.status === "pending") {
+      showErrorMsg("We’re preparing your Echo instance. You’ll get a WhatsApp message when ready.", false);
+      resetUI(originalText);
+      return;
+    }
+
+    if (data.status === "ready" && data.qr) {
+      qrImg.src = data.qr.startsWith("data:") ? data.qr : `data:image/png;base64,${data.qr}`;
+      qrImg.alt = "Scan this QR with WhatsApp";
+      qrImg.style.display = "block";
+
+      // Polling loop with max attempts
+      let attempts = 0;
+      const MAX_ATTEMPTS = 24; // 24 × 5s = 2 minutes
+
+      pollId = setInterval(async () => {
+        try {
+          attempts++;
+
+          const stateRes = await fetch(`/instance-state?user_id=${e164NoPlus}`);
+          if (!stateRes.ok) throw new Error(`state check failed: ${stateRes.status}`);
+          const { state } = await stateRes.json();
+
+          if (state === "authorized") {
+            clearInterval(pollId);
+            pollId = null;
+            qrImg.style.display = "none";
+            loginBtn.innerText = "Connected ✅";
+            await fetch(`/refresh-contact?user_id=${e164NoPlus}`);
+
+            document.getElementById("success-wrap").classList.remove("hidden");
+
+          } else if (["blocked", "yellowCard"].includes(state)) {
+            clearInterval(pollId);
+            pollId = null;
+            showErrorMsg(`Instance is ${state}. Please take action.`);
+            resetUI(originalText);
+          } else if (state === "expired") {
+            clearInterval(pollId);
+            pollId = null;
+            showErrorMsg("QR expired. Please try again.");
+            resetUI(originalText);
+          } else if (attempts >= MAX_ATTEMPTS) {
+            clearInterval(pollId);
+            pollId = null;
+            showErrorMsg("Login timed out. Please try again.");
+            resetUI(originalText);
+          }
+          // else: keep polling if still "notAuthorized" etc.
+
+        } catch (err) {
+          console.error("Polling error:", err);
+          clearInterval(pollId);
+          pollId = null;
+          showErrorMsg("Login session failed. Please try again.");
+          resetUI(originalText);
+        }
+      }, 5000);
+
+      return;
+    }
+
+    // fallback
+    showErrorMsg("Unexpected response. Please try again later.");
+    resetUI(originalText);
+
+  } catch (err) {
+    console.error("Login flow error:", err);
+    showErrorMsg("We’re currently onboarding many users. Please wait and try again.");
+    resetUI(originalText);
+  }
+}
+
+// Retry handler
+retryBtn.addEventListener("click", () => {
+  retryBtn.classList.add("hidden");
+  startLogin();
+});
+
+  </script>
+</body>
+</html>

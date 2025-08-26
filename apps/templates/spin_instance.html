@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Start Echo Setup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-50">
+  <main class="mx-auto max-w-md px-4 py-12 text-center">
+    <h1 class="text-2xl font-bold mb-6">Welcome to Echo</h1>
+
+    <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-6 shadow-xl">
+      <label for="phone" class="block text-sm text-slate-300 mb-1">WhatsApp Number</label>
+      <input id="phone" type="tel"
+             class="w-full rounded-xl bg-slate-800 border border-white/10 px-3 py-2 mb-2" />
+
+      <p class="text-xs text-slate-400 mb-4">
+        Enter your number in international format. Example: 14155552671
+      </p>
+
+      <button id="prepare-btn"
+              class="block w-full rounded-2xl bg-green-600 hover:bg-green-500 py-3 text-base font-medium">
+        Start Setup
+      </button>
+
+      <p id="status" class="hidden text-sm text-slate-400 mt-3"></p>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById("prepare-btn").addEventListener("click", async () => {
+      const phone = document.getElementById("phone").value.trim();
+      if (!phone) {
+        alert("Please enter a valid number");
+        return;
+      }
+
+      const btn = document.getElementById("prepare-btn");
+      const status = document.getElementById("status");
+
+      btn.disabled = true;
+      btn.innerText = "Preparing…";
+
+      try {
+        const res = await fetch("/prepare-instance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: phone })
+        });
+
+        if (!res.ok) throw new Error(`prepare-instance failed: ${res.status}`);
+
+        status.innerText = "✅ Setup started. You’ll get a WhatsApp message when ready.";
+        status.classList.remove("hidden");
+        btn.innerText = "Setup in Progress";
+      } catch (err) {
+        console.error(err);
+        status.innerText = "⚠️ Something went wrong. Please try again.";
+        status.classList.remove("hidden");
+        btn.disabled = false;
+        btn.innerText = "Start Setup";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Echo — העוזר האישי בוואטסאפ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f2f4f7;
+      color: #212529;
+      text-align: center;
+      padding: 2em;
+      margin: 0;
+      direction: rtl;
+    }
+    .container {
+      max-width: 560px;
+      margin: auto;
+      background-color: #fff;
+      padding: 2.5em 2em;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+    h1 { margin-bottom: 0.25em; font-size: 1.8em; color: #1b5e20; }
+    .subtitle { margin: 0 0 1.25em 0; color: #495057; font-size: 0.95em; }
+
+    .features {
+      background-color: #e8f5e9;
+      padding: 1.25em;
+      border-radius: 12px;
+      margin-bottom: 2em;
+      text-align: right;
+    }
+    .feat-grid { display: grid; grid-template-columns: 1fr; gap: 0.6em 1em; }
+    .feat { display: flex; gap: 0.5em; align-items: flex-start; font-size: 0.98em; color: #1b5e20; }
+    .badge {
+      display: inline-block;
+      background: #e9ecef;
+      color: #212529;
+      border-radius: 999px;
+      padding: 0.2em 0.7em;
+      font-size: 0.8em;
+      margin: 0.25em 0.25em 0 0;
+    }
+
+    label { display: block; margin-top: 1.2em; font-size: 1em; text-align: right; }
+    input {
+      width: 100%; padding: 0.6em; margin-top: 0.35em;
+      border: 1px solid #ccc; border-radius: 8px; font-size: 1em; text-align: center;
+    }
+    button {
+      background-color: #1b5e20; color: #fff; border: none; padding: 0.7em 1.4em;
+      font-size: 1em; border-radius: 8px; cursor: pointer; margin-top: 1.2em;
+      transition: background-color 0.2s ease, transform 0.02s ease;
+    }
+    button:hover { background-color: #145c18; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    #qr-section { margin-top: 2em; background-color: #e8f5e9; padding: 1.25em; border-radius: 12px; text-align: right; }
+    #spinner > div {
+      border: 4px solid #d3f1d6; border-top: 4px solid #1b5e20;
+      border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #qr-image { display: none; max-width: 240px; margin-top: 1.2em; border: 1px solid #ccc; padding: 8px; background: #fff; }
+    details { text-align: right; margin-top: 1em; }
+    summary { cursor: pointer; font-weight: bold; font-size: 1em; }
+    .section-title { font-size: 1.2em; margin: 1.6em 0 0.4em 0; text-align: right; }
+    .note { text-align: right; font-size: 0.9em; color: #666; margin-top: 0.6em; }
+    .footer { margin-top: 2em; font-size: 0.92em; color: #888; }
+
+    @media (min-width: 560px) { .feat-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>אקו - העוזר האישי בוואטסאפ</h1>
+    <div class="subtitle">תזכורות פשוטות, הודעות מתוזמנות, חיפוש בצ׳אטים וברשת — ישירות מתוך וואטסאפ</div>
+
+    <div class="features">
+      <div class="feat-grid">
+        <div class="feat">🗒️ תזכורות פשוטות בלשון חופשית</div>
+        <div class="feat">📤 הודעות מתוזמנות — מהחשבון שלכם</div>
+        <div class="feat">🔎 חיפוש בהיסטוריית הצ׳אטים</div>
+        <div class="feat">🌐 חיפוש מידע מהאינטרנט</div>
+      </div>
+      <div style="margin-top: 0.6em;">
+        <span class="badge">תומך קול וטקסט</span>
+        <span class="badge">פרטי ובטוח</span>
+        <span class="badge">עברית / English</span>
+      </div>
+    </div>
+
+    <!-- שלב 1 -->
+    <div class="section-title">שלב 1: התחברות לוואטסאפ</div>
+    <label for="phone">מספר טלפון (בפורמט בינלאומי):</label>
+    <input type="text" id="phone" name="phone" placeholder="למשל: 972541234567" value="{{ user_id or '' }}" />
+    <button id="login-btn" onclick="startLogin()">התחברות עם קוד QR</button>
+
+    <div id="spinner" style="display: none;">
+      <div></div>
+      <p style="margin-top: 0.5em; text-align:center;">ממתין לקוד QR...</p>
+    </div>
+
+    <img id="qr-image" src="" alt="QR" />
+
+    <div id="qr-section">
+      <p>סרקו את הקוד כדי לחפש בצ׳אטים שלכם, לשלוח הודעות מתוזמנות, לקבל תזכורות ולחפש ברשת. אחרי ההתחברות תקבלו הודעת ברוכים הבאים.</p>
+
+      <details>
+        <summary>📌 דוגמאות למה אפשר לומר לעוזר</summary>
+        <div style="margin-top: 0.8em;">
+          <p>• תזכיר לי בעוד שעה להתקשר לחיים</p>
+          <p>• שלח למיקו מחר בשמונה: “איך מתקדם השיפוץ?”</p>
+          <p>• חפש בצ׳אט עם ניר: “הצעת מחיר לגג”</p>
+          <p>• מה אומרים ברשת על טיסות לתאילנד השבוע?</p>
+          <p>• 🎙️ (קול) “תזכיר לי ב-9 להתקשר לרופא”</p>
+        </div>
+      </details>
+      <div class="note">טיפ: אם אין QR, רעננו את הדף או נסו שוב בעוד דקה.</div>
+    </div>
+
+    <div class="footer">Echo — עוזר אישי פשוט שמבין אותך, בתוך וואטסאפ.</div>
+  </div>
+
+  <script>
+    async function startLogin() {
+      const phone   = document.getElementById("phone").value.trim();
+      const qrImg   = document.getElementById("qr-image");
+      const spinner = document.getElementById("spinner");
+      const loginBtn= document.getElementById("login-btn");
+      const originalText = loginBtn.innerText;
+  
+      if (!/^972\d{9}$/.test(phone)) {
+        alert("אנא הזינו מספר טלפון תקין בפורמט בינלאומי (למשל: 972541234567)");
+        return;
+      }
+  
+      // UI state
+      qrImg.style.display = 'none';
+      spinner.style.display = 'block';
+      loginBtn.disabled = true;
+      loginBtn.innerText = "טוען...";
+  
+      try {
+        // Single call that both creates the channel and fetches the QR
+        const res = await fetch("/login-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: phone })
+        });
+        if (!res.ok) throw new Error(`login-user failed: ${res.status}`);
+        const { token, qr } = await res.json();
+  
+        spinner.style.display = 'none';
+  
+        if (!qr || typeof qr !== "string" || !qr.trim()) {
+          throw new Error("Empty QR from server");
+        }
+  
+        // Accept either raw base64 or a full data URI
+        qrImg.src = qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`;
+        qrImg.alt = "Scan this QR with WhatsApp";
+        qrImg.style.display = 'block';
+  
+        // Re-enable the button so the user can retry if needed
+        loginBtn.disabled = false;
+        loginBtn.innerText = originalText;
+  
+        // OPTIONAL: if user doesn’t scan quickly, the QR may expire.
+        // You can re-fetch a fresh QR using the saved token (via a small `/login-qr` endpoint)
+        // and update qrImg.src again. Not adding that here since you didn’t ask to change the backend.
+      } catch (err) {
+        console.error("Login flow error:", err);
+        spinner.style.display = 'none';
+        loginBtn.disabled = false;
+        loginBtn.innerText = originalText;
+        alert("שגיאה בהתחברות. נסו שוב.");
+      }
+    }
+  </script>
+</body>
+</html>

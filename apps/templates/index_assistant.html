@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Echo — AI Assistant for WhatsApp</title>
+  <meta name="description" content="Echo is a responsible AI assistant that helps professionals and small businesses work faster inside WhatsApp." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{slate:{925:'#0b1726'}}}}}</script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>html{scroll-behavior:smooth}</style>
+</head>
+<body class="min-h-screen text-slate-50 bg-[radial-gradient(60%_80%_at_70%_10%,rgba(16,185,129,0.12),transparent),linear-gradient(180deg,rgba(2,6,23,0.9),rgba(2,6,23,1))]">
+  <!-- NAV -->
+  <header class="sticky top-0 z-30 backdrop-blur bg-slate-900/60 border-b border-white/5">
+    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+  
+      <!-- Brand → click to Home -->
+      <a href="{{ url_for('home') }}" class="flex items-center gap-2 hover:opacity-90" aria-label="Echo — Home">
+        <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-green-400 to-emerald-400 grid place-items-center shadow-lg shadow-green-500/20">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+        </div>
+        <span class="text-sm font-semibold tracking-wide text-slate-200">Echo</span>
+      </a>
+  
+      <!-- rest of your nav ... -->
+      <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+        <a href="#features" class="hover:text-white">Features</a>
+        <a href="#how" class="hover:text-white">How It Works</a>
+        <a href="{{ url_for('contact') }}" class="hover:text-white">Contact</a>
+      </nav>
+      <a href="#contact" class="inline-flex items-center justify-center rounded-2xl bg-green-600 px-4 py-2 text-sm font-medium hover:bg-green-500">Get in Touch</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section id="hero" class="relative">
+    <div class="mx-auto max-w-6xl px-4 py-20 grid lg:grid-cols-[1.1fr_0.9fr] items-center gap-12">
+      <div class="space-y-6">
+        <p class="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-green-300">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> Responsible AI for WhatsApp
+        </p>
+        <h1 class="text-4xl md:text-5xl font-bold leading-tight">AI Assistant for Professionals on WhatsApp</h1>
+        <p class="text-lg md:text-xl text-slate-300">Echo helps teams and solo operators work faster where they already are — inside WhatsApp — with safe, privacy‑first AI assistance.</p>
+        <div class="flex flex-wrap items-center gap-3">
+          <a href="#contact" class="inline-flex items-center justify-center rounded-2xl bg-green-600 px-6 py-3 text-base font-medium hover:bg-green-500">Talk to Sales</a>
+          <a href="#features" class="inline-flex items-center justify-center rounded-2xl border border-green-600 text-green-600 px-6 py-3 text-base font-medium hover:bg-green-600 hover:text-white transition">Learn More</a>
+        </div>
+        <ul class="mt-2 text-sm text-slate-300 grid sm:grid-cols-3 gap-y-1 max-w-xl">
+          <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-green-300"></i> Chat‑first workflows</li>
+          <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-green-300"></i> Low‑friction onboarding</li>
+          <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-green-300"></i> Privacy‑forward by design</li>
+        </ul>
+      </div>
+      <!-- Safe visual mock -->
+      <div class="relative hidden md:block">
+        <div class="mx-auto w-[320px] h-[640px] rounded-[2.5rem] p-3 bg-slate-800/60 border border-white/10 shadow-2xl shadow-emerald-900/20">
+          <div class="h-full w-full rounded-[2rem] bg-slate-900 p-4 flex flex-col gap-2 text-[13px]">
+            <div class="flex items-center justify-between px-1">
+              <div class="h-2 w-12 rounded-full bg-slate-700"></div>
+              <div class="h-2 w-20 rounded-full bg-slate-700"></div>
+              <div class="h-2 w-8 rounded-full bg-slate-700"></div>
+            </div>
+            <div class="mt-2 space-y-3">
+              <div class="max-w-[86%] rounded-2xl rounded-bl-none bg-slate-800 px-3 py-2 text-slate-200 shadow">Draft a friendly reply to the latest customer message.</div>
+              <div class="max-w-[80%] ml-auto rounded-2xl rounded-br-none bg-green-600/90 px-3 py-2 text-white shadow">Here’s a concise, professional reply you can send.</div>
+              <div class="max-w-[88%] rounded-2xl rounded-bl-none bg-slate-800 px-3 py-2 text-slate-200 shadow">Summarize my last conversation with Dana.</div>
+              <div class="max-w-[72%] ml-auto rounded-2xl rounded-br-none bg-green-600/90 px-3 py-2 text-white shadow">Summary ready — key points and next steps.</div>
+              <div class="max-w-[78%] rounded-2xl rounded-bl-none bg-slate-800 px-3 py-2 text-slate-200 shadow">Translate this to English and improve tone.</div>
+              <div class="max-w-[76%] ml-auto rounded-2xl rounded-br-none bg-green-600/90 px-3 py-2 text-white shadow">Done. Polite, clear, and ready to send.</div>
+            </div>
+            <div class="mt-auto grid grid-cols-3 gap-3 text-[11px]">
+              <div class="rounded-xl bg-slate-800/80 py-3 px-2 text-center">
+                <div class="mx-auto h-6 w-6 grid place-items-center rounded-full bg-slate-700/60 mb-1"><i data-lucide="bot" class="w-4 h-4"></i></div>
+                AI Assist
+              </div>
+              <div class="rounded-xl bg-slate-800/80 py-3 px-2 text-center">
+                <div class="mx-auto h-6 w-6 grid place-items-center rounded-full bg-slate-700/60 mb-1"><i data-lucide="languages" class="w-4 h-4"></i></div>
+                Translate
+              </div>
+              <div class="rounded-xl bg-slate-800/80 py-3 px-2 text-center">
+                <div class="mx-auto h-6 w-6 grid place-items-center rounded-full bg-slate-700/60 mb-1"><i data-lucide="file-text" class="w-4 h-4"></i></div>
+                Summarize
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="absolute -z-10 inset-0 blur-3xl opacity-40 bg-gradient-to-br from-emerald-500/40 via-green-400/30 to-transparent rounded-[3rem]"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES (generic, safe) -->
+  <section id="features" class="py-16">
+    <div class="mx-auto max-w-6xl px-4">
+      <h2 class="text-2xl md:text-3xl font-bold mb-8">What Echo Helps With</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-6">
+          <h3 class="flex items-center gap-2 text-xl text-slate-100 mb-2"><i data-lucide="message-square-text" class="w-5 h-5 text-green-300"></i> Draft & Improve Replies</h3>
+          <p class="text-slate-300">Polish tone, clarify intent, and respond faster — right inside the chat.</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-6">
+          <h3 class="flex items-center gap-2 text-xl text-slate-100 mb-2"><i data-lucide="file-text" class="w-5 h-5 text-green-300"></i> Summaries & Insights</h3>
+          <p class="text-slate-300">Turn long threads into key points and next steps you can act on.</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-6">
+          <h3 class="flex items-center gap-2 text-xl text-slate-100 mb-2"><i data-lucide="languages" class="w-5 h-5 text-green-300"></i> Translation & Clarity</h3>
+          <p class="text-slate-300">Communicate across languages with clear, professional phrasing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="py-16">
+    <div class="mx-auto max-w-6xl px-4">
+      <h2 class="text-2xl md:text-3xl font-bold mb-8">How It Works</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="rounded-2xl bg-slate-900/60 border border-white/10 p-6">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="h-10 w-10 grid place-items-center rounded-xl bg-green-500/20"><i data-lucide="link" class="w-5 h-5"></i></div>
+            <h3 class="text-slate-100 font-semibold">1. Connect</h3>
+          </div>
+          <p class="text-slate-300">Onboard in minutes. Use your existing WhatsApp setup. No new app to learn.</p>
+        </div>
+        <div class="rounded-2xl bg-slate-900/60 border border-white/10 p-6">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="h-10 w-10 grid place-items-center rounded-xl bg-green-500/20"><i data-lucide="bot" class="w-5 h-5"></i></div>
+            <h3 class="text-slate-100 font-semibold">2. Assist</h3>
+          </div>
+          <p class="text-slate-300">Chat naturally. Echo helps draft, summarize, translate, and keep you focused.</p>
+        </div>
+        <div class="rounded-2xl bg-slate-900/60 border border-white/10 p-6">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="h-10 w-10 grid place-items-center rounded-xl bg-green-500/20"><i data-lucide="bar-chart" class="w-5 h-5"></i></div>
+            <h3 class="text-slate-100 font-semibold">3. Improve</h3>
+          </div>
+          <p class="text-slate-300">Better responses, clearer decisions, less context switching.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="bg-slate-900 py-16">
+    <div class="max-w-5xl mx-auto px-6">
+      <h2 class="text-2xl font-bold text-center mb-10">Use Case Example</h2>
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <!-- Left column: text -->
+        <div>
+          <h3 class="text-xl font-semibold mb-4">Helping a Solo Service Provider</h3>
+          <p class="text-slate-300 mb-4">
+            Sarah runs a small beauty studio and manages all her client communication on WhatsApp.  
+            She often struggles to keep up with messages while providing treatments.  
+          </p>
+          <p class="text-slate-300 mb-4">
+            With Echo, Sarah’s WhatsApp becomes smarter: she can draft polite replies, get quick summaries of long chat threads, and even translate client requests into clear, professional responses.
+          </p>
+          <p class="text-slate-300">
+            This saves her hours each week, helps her stay responsive, and gives clients a more professional experience — all without leaving WhatsApp.
+          </p>
+        </div>
+        <!-- Right column: mockup -->
+        <div class="bg-slate-800 rounded-2xl p-6 shadow-lg">
+          <p class="text-sm text-slate-400 mb-3">Inside Sarah’s WhatsApp</p>
+          <div class="space-y-4">
+            <div class="bg-slate-700 p-3 rounded-lg w-3/4">"Can you confirm my appointment on Friday?"</div>
+            <div class="bg-green-600 p-3 rounded-lg w-2/3 ml-auto">"Yes, confirmed for Friday at 10 AM. Looking forward to seeing you!"</div>
+            <div class="bg-slate-700 p-3 rounded-lg w-4/5">"Can you explain the skincare package in English?"</div>
+            <div class="bg-green-600 p-3 rounded-lg w-2/3 ml-auto">"Of course — here’s a clear explanation in English."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- TRUST / ABOUT -->
+  <section class="bg-slate-800 py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <h2 class="text-2xl font-bold text-white mb-8">Trust & Responsibility</h2>
+      <div class="grid md:grid-cols-3 gap-8 text-slate-200">
+        
+        <div class="p-6 rounded-xl bg-slate-900 shadow">
+          <h3 class="font-semibold text-lg mb-3">Privacy-First</h3>
+          <p>We minimize data retention and respect WhatsApp privacy expectations.  
+          No reselling, no hidden tracking — just the service you signed up for.</p>
+        </div>
+        
+        <div class="p-6 rounded-xl bg-slate-900 shadow">
+          <h3 class="font-semibold text-lg mb-3">Responsible AI</h3>
+          <p>Clear guardrails against abuse, transparent AI behavior, and human-in-the-loop review for sensitive actions.</p>
+        </div>
+        
+        <div class="p-6 rounded-xl bg-slate-900 shadow">
+          <h3 class="font-semibold text-lg mb-3">Platform Alignment</h3>
+          <p>We onboard clients responsibly, encourage compliance with WhatsApp’s terms, and support fair, safe use of messaging channels.</p>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+  
+
+  <!-- CONTACT -->
+  <section id="contact" class="py-20">
+    <div class="mx-auto max-w-4xl px-4 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold">Talk to Sales</h2>
+      <p class="text-slate-300 mt-3">Tell us about your team and workflows. We’ll propose the best way to get started.</p>
+      <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="mailto:sales@driftless.pro" class="inline-flex items-center justify-center rounded-2xl bg-green-600 px-6 py-3 text-base font-medium hover:bg-green-500"><i data-lucide="mail" class="w-4 h-4 mr-2"></i> sales@driftless.pro</a>
+        <a href="https://wa.me/972546610653" class="inline-flex items-center justify-center rounded-2xl border border-green-600 text-green-600 px-6 py-3 text-base font-medium hover:bg-green-600 hover:text-white transition"><i data-lucide="message-circle" class="w-4 h-4 mr-2"></i> Message us on WhatsApp</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-slate-800 py-12">
+    <div class="max-w-3xl mx-auto px-6 text-center">
+      <h2 class="text-2xl font-bold mb-4">About Us</h2>
+      <p class="text-slate-300">
+        Echo is developed by Driftless, an independent software studio based in Israel. 
+        We specialize in building AI-powered productivity tools with a focus on privacy, 
+        security, and reliability. Our team works with small businesses and professionals 
+        to make communication on WhatsApp more effective and efficient — always within 
+        responsible and compliant guidelines.
+      </p>
+    </div>
+  </section>
+  
+  <footer class="border-t border-white/10 py-8 text-center text-xs text-slate-400">
+    © <span id="year"></span> Echo. All rights reserved.
+    <div class="mt-3 flex justify-center gap-6 text-xs text-slate-400">
+      <a href="/privacy" class="hover:text-slate-200">Privacy</a>
+      <a href="/terms" class="hover:text-slate-200">Terms</a>
+      <a href="/contact" class="hover:text-slate-200">Contact</a>
+    </div>
+  </footer>
+
+  <script>lucide.createIcons();document.getElementById('year').textContent=new Date().getFullYear()</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy Policy - Echo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Echo Privacy Policy — responsible, privacy-first AI assistance in WhatsApp." />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+  <main class="flex-1 max-w-3xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6">Privacy Policy</h1>
+
+    <p class="mb-4 text-slate-300">
+      We respect your privacy. Echo is a privacy-first AI assistant for professionals. This policy explains what we collect, why, and your choices.
+    </p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">Who we are</h2>
+    <p class="mb-4 text-slate-300">
+      Controller: <span class="font-medium">ECHO LTD</span>, <span class="whitespace-nowrap">ADDRESS: Echo Ltd, Sde Nehemia, Israel</span>, Email: 
+      <a href="mailto:privacy@driftless.pro" class="text-green-400 hover:underline">privacy@driftless.pro</a>
+    </p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">Data we collect</h2>
+    <ul class="list-disc pl-5 space-y-2 text-slate-300">
+      <li>Account details: name, WhatsApp number, and basic contact info provided by you.</li>
+      <li>Usage data: timestamps, feature usage, and technical logs to keep the service reliable.</li>
+      <li>Message content you explicitly send to Echo for AI assistance (e.g., to draft or summarize).</li>
+    </ul>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">How we use data</h2>
+    <ul class="list-disc pl-5 space-y-2 text-slate-300">
+      <li>Provide the service (AI assistance inside WhatsApp) and maintain reliability.</li>
+      <li>Prevent abuse, troubleshoot issues, and improve quality.</li>
+      <li>Communicate important service updates.</li>
+    </ul>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">Retention</h2>
+    <p class="mb-4 text-slate-300">
+      We keep data only as long as needed to deliver the service and meet legal obligations. 
+      On cancellation or deletion request, we remove associated personal data, subject to lawful retention requirements.
+    </p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">Processors & transfers</h2>
+    <p class="mb-4 text-slate-300">
+      We use trusted providers to operate Echo (e.g., cloud hosting, AI model providers). These processors handle data on our behalf under contracts and appropriate safeguards.
+      Current categories include: hosting/infrastructure, observability/logging, and AI inference providers.
+    </p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">Security</h2>
+    <p class="mb-4 text-slate-300">
+      We apply technical and organizational measures to protect data (encryption in transit, access controls, least-privilege practices). 
+      No method is 100% secure, but we work to continuously improve.
+    </p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">Your rights</h2>
+    <p class="mb-4 text-slate-300">
+      Depending on your location, you may have rights to access, correct, delete, or restrict processing of your personal data, and to contact your local supervisory authority. 
+      To exercise rights, email <a href="mailto:privacy@driftless.pro" class="text-green-400 hover:underline">privacy@driftless.pro</a>.
+    </p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">Children</h2>
+    <p class="mb-4 text-slate-300">Echo is not directed to children. If you believe a child’s data was provided to us, contact us to remove it.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">Changes</h2>
+    <p class="mb-6 text-slate-300">We may update this policy. We’ll post changes here and revise the “Last updated” date.</p>
+
+    <p class="text-sm text-slate-400">Last updated: AUGUST 15, 2025</p>
+
+    <p class="mt-6 text-sm">
+      <a href="{{ url_for('home') }}" class="text-green-400 hover:underline">← Back to Home</a>
+    </p>
+  </main>
+
+  <footer class="border-t border-slate-700 py-6 text-center text-xs text-slate-400">
+    © <span id="year"></span> Echo. All rights reserved.
+    <div class="mt-3 flex justify-center gap-6">
+      <a href="{{ url_for('privacy') }}" class="hover:text-slate-200">Privacy</a>
+      <a href="{{ url_for('terms') }}" class="hover:text-slate-200">Terms</a>
+      <a href="{{ url_for('contact') }}" class="hover:text-slate-200">Contact</a>
+    </div>
+  </footer>
+
+  <script>document.getElementById('year').textContent = new Date().getFullYear()</script>
+</body>
+</html>

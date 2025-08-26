@@ -1,0 +1,12 @@
+1. only one main agent is always user facing. no classification. no handoffs.
+2. agent as tool: specialized agents for deeper tasks.
+3. prompt needs to be coherent and in one conceptual space.
+4. no more than 5 tools per agent.
+5. TDD - test driven development.
+    5.1. understnd prompt needs.
+    5.2. few shot examples.
+    5.3. actual tests
+6. dont over complicate. event/reminder/task are not agents. only scheduled message is an agent. a specialized agent.
+7. 
+
+

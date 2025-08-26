@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full antialiased" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Echo — If WhatsApp is your office</title>
+  <meta name="description" content="Schedule, remind, and find — inside WhatsApp. Echo is your secretary." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --bg:#0B0F13; --bg2:#0F141A; --text:#EAECEF; --muted:#93A0AE; --accent:#23C552;
+      --card:rgba(255,255,255,.06); --border:rgba(255,255,255,.12)
+    }
+    .phone{
+      background: linear-gradient(180deg,#0e1117,#141a22);
+      border:1px solid var(--border);
+      border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+  </style>
+</head>
+<body class="min-h-full bg-[var(--bg)] text-[var(--text)] selection:bg-[var(--accent)]/20">
+
+  <!-- Top Bar -->
+  <header class="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="/" class="font-semibold tracking-tight text-xl">Echo</a>
+      <nav class="hidden md:flex items-center gap-6 text-sm text-[var(--muted)]">
+        <a href="#how" class="hover:text-[var(--text)]">How it works</a>
+        <a href="#pricing" class="hover:text-[var(--text)]">Pricing</a>
+        <a href="/contact" class="hover:text-[var(--text)]">Contact</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="/login" class="hidden sm:inline-block rounded-xl border border-[var(--border)] px-4 py-2 text-sm hover:border-[var(--accent)]">Login</a>
+        <a href="/login" class="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-black hover:opacity-90">Start for $9</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center py-12 lg:py-20">
+      <h1 class="text-2xl sm:text-4xl lg:text-5xl font-semibold leading-snug">
+        If WhatsApp is your office, <span class="text-[var(--accent)]">Echo</span> is your secretary.
+      </h1>
+      <p class="mt-4 text-base sm:text-lg text-[var(--muted)]">
+        Schedule, remind, and find — all without leaving WhatsApp.  
+        Your number stays yours. Business-grade tools, no extra hassle.
+      </p>
+  
+      <div class="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+        <a href="/login" class="rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-black hover:opacity-90">
+          Start for $9/month
+        </a>
+        <a href="#how" class="rounded-xl border border-[var(--border)] px-6 py-3 text-sm text-[var(--text)] hover:border-[var(--accent)]">
+          See how it works
+        </a>
+      </div>
+  
+      <p class="mt-4 text-xs text-[var(--muted)]">
+        One flat price. No hidden fees. Cancel anytime.
+      </p>
+    </div>
+  </section>
+  
+<!-- Why Echo -->
+<section class="border-t border-[var(--border)] bg-[var(--bg2)]">
+  <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16 text-center">
+    <h2 class="text-2xl sm:text-3xl font-semibold mb-6">Why Echo?</h2>
+    <p class="text-lg text-[var(--muted)] leading-relaxed mb-8">
+      Other tools force you onto new numbers or extra dashboards.  
+      Echo is different — it simply makes WhatsApp smarter:
+    </p>
+    <ul class="text-left space-y-4 max-w-md mx-auto text-sm sm:text-base">
+      <li class="flex items-start gap-3">
+        <span class="mt-1 h-2 w-2 rounded-full bg-[var(--accent)]"></span>
+        <span><strong>Stay on your own number</strong> — your WhatsApp, your clients.</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="mt-1 h-2 w-2 rounded-full bg-[var(--accent)]"></span>
+        <span><strong>Work where you already are</strong> — everything happens inside chat.</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="mt-1 h-2 w-2 rounded-full bg-[var(--accent)]"></span>
+        <span><strong>Never drop the ball</strong> — reminders, scheduling, and follow-ups that just work.</span>
+      </li>
+    </ul>
+
+    <!-- New block for Google integrations -->
+    <p class="mt-10 text-sm text-[var(--muted)] max-w-lg mx-auto">
+      ✨ With your permission, Echo connects securely to your 
+      <strong>Google Calendar, Tasks, and Contacts</strong> —  
+      so you can schedule events, manage to-dos, and invite the right people, all from WhatsApp.
+    </p>
+  </div>
+</section>
+
+<section class="relative overflow-hidden py-16 bg-[var(--bg)]">
+  <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="text-2xl sm:text-4xl font-semibold mb-6">Echo: Your Business Secretary in WhatsApp</h2>
+    <div class="grid gap-10 sm:grid-cols-3 text-left">
+      
+      <div class="rounded-xl border border-[var(--border)] p-6 bg-[var(--card)] shadow-sm">
+        <h3 class="text-lg font-medium mb-2">Never miss a follow-up</h3>
+        <p class="text-[var(--muted)] text-sm">
+          Turn any chat into a reminder.  
+          <em>“Follow up with Dana about the contract in 2 days.”</em><br>
+          Echo reminds you — right inside WhatsApp.
+        </p>
+      </div>
+
+      <div class="rounded-xl border border-[var(--border)] p-6 bg-[var(--card)] shadow-sm">
+        <h3 class="text-lg font-medium mb-2">Schedule messages like a pro</h3>
+        <p class="text-[var(--muted)] text-sm">
+          Send at the right time, every time.  
+          <em>“Send the property photos to John tomorrow at 9 AM.”</em><br>
+          Echo delivers, even across time zones.
+        </p>
+      </div>
+
+      <div class="rounded-xl border border-[var(--border)] p-6 bg-[var(--card)] shadow-sm">
+        <h3 class="text-lg font-medium mb-2">Find commitments instantly</h3>
+        <p class="text-[var(--muted)] text-sm">
+          No more scrolling through endless chats.  
+          <em>“Show me when I promised Amir a discount.”</em><br>
+          Echo searches your WhatsApp history and gives you the answer.
+        </p>
+      </div>
+
+    </div>
+    <p class="mt-10 text-sm text-[var(--muted)]">
+      ⚡ All inside WhatsApp. No new app, no new number. Just $9/month.
+    </p>
+  </div>
+</section>
+
+
+ <!-- Social proof -->
+<!-- Social proof -->
+<section class="border-t border-[var(--border)] bg-[var(--bg2)]">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+
+    <!-- Testimonial list -->
+    <div class="grid gap-6 md:grid-cols-2">
+      
+      <!-- Testimonial 1 -->
+      <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+        <p class="text-sm leading-relaxed">
+          “I didn’t want another dashboard or a second WhatsApp number.  
+          Echo just works in my existing WhatsApp — and now I never miss a follow-up.”
+        </p>
+        <div class="mt-3 text-xs text-[var(--muted)]">— Dana, Therapist</div>
+      </div>
+
+      <!-- Testimonial 2 -->
+      <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+        <p class="text-sm leading-relaxed">
+          “I teach yoga and manage all my student scheduling in WhatsApp.  
+          With Echo, I can confirm classes, send reminders, and stay organized without extra apps.”
+        </p>
+        <div class="mt-3 text-xs text-[var(--muted)]">— Amir, Yoga Teacher</div>
+      </div>
+    </div>
+
+
+  <!-- Audience tags -->
+<div class="flex flex-wrap items-center gap-3 text-sm text-[var(--muted)]">
+  <span class="opacity-80">Built for solo pros:</span>
+  <span class="rounded-full border border-[var(--border)] px-3 py-1">Therapists</span>
+  <span class="rounded-full border border-[var(--border)] px-3 py-1">Coaches</span>
+  <span class="rounded-full border border-[var(--border)] px-3 py-1">Yoga Teachers</span>
+  <span class="rounded-full border border-[var(--border)] px-3 py-1">Tutors</span>
+  <span class="rounded-full border border-[var(--border)] px-3 py-1">Freelancers</span>
+</div>
+
+  </div>
+</section>
+
+  <!-- Live preview tiles -->
+  <section class="py-14">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Tile -->
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <h3 class="text-lg font-medium">Schedule</h3>
+          <p class="mt-1 text-sm text-[var(--muted)]">Write now, deliver later.</p>
+          <div class="mt-4 phone p-3">
+            <div class="rounded-2xl bg-black/20 p-3 text-xs">
+              “Send to Team: Meeting moved to 3pm.” <span class="ml-2 rounded-full bg-[var(--accent)]/20 px-2 py-0.5 text-[var(--accent)]">Scheduled 15:00</span>
+            </div>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <h3 class="text-lg font-medium">Remind</h3>
+          <p class="mt-1 text-sm text-[var(--muted)]">Tell it once, never forget.</p>
+          <div class="mt-4 phone p-3">
+            <div class="rounded-2xl bg-black/20 p-3 text-xs">
+              “Remind me tonight to pack my gym bag.” <span class="ml-2 rounded-full bg-[var(--accent)]/20 px-2 py-0.5 text-[var(--accent)]">Today 19:00</span>
+            </div>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <h3 class="text-lg font-medium">Search</h3>
+          <p class="mt-1 text-sm text-[var(--muted)]">No more scrolling.</p>
+          <div class="mt-4 phone p-3">
+            <div class="rounded-2xl bg-black/20 p-3 text-xs">
+              “Find: last time I talked to John about payments.”  
+              <div class="mt-2 rounded-lg border border-[var(--border)] p-2">Summary: 3 results • latest on Tue • includes invoice link</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature grid -->
+  <section class="border-y border-[var(--border)] bg-[var(--bg2)] py-14">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div class="text-sm font-medium">Direct send</div>
+          <p class="mt-1 text-sm text-[var(--muted)]">Type “Send to &lt;name&gt; …” — Echo finds the contact.</p>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div class="text-sm font-medium">Time zones</div>
+          <p class="mt-1 text-sm text-[var(--muted)]">Auto-aware delivery across time zones.</p>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div class="text-sm font-medium">Voice in</div>
+          <p class="mt-1 text-sm text-[var(--muted)]">Tap mic, speak, done.</p>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div class="text-sm font-medium">Summaries</div>
+          <p class="mt-1 text-sm text-[var(--muted)]">Turn long chats into 5-line briefs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how" class="py-14">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <h2 class="text-2xl sm:text-3xl font-semibold">How it works</h2>
+      <div class="mt-8 grid md:grid-cols-3 gap-6">
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div class="text-lg font-medium">1) Link once</div>
+          <p class="mt-1 text-sm text-[var(--muted)]">Scan a QR. Your number stays yours.</p>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div class="text-lg font-medium">2) Chat naturally</div>
+          <p class="mt-1 text-sm text-[var(--muted)]">Type or dictate what you need.</p>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+          <div class="text-lg font-medium">3) Echo handles it</div>
+          <p class="mt-1 text-sm text-[var(--muted)]">Schedules, reminders, searches.</p>
+        </div>
+      </div>
+      <div class="mt-6">
+        <a href="/privacy" class="text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--text)]">Is Echo official? Learn more</a>
+      </div>
+    </div>
+  </section>
+
+  
+<!-- Pricing -->
+<section id="pricing" class="border-y border-[var(--border)] bg-[var(--bg2)] py-14">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    
+    <!-- Pricing Card -->
+    <div class="mx-auto max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--card)] p-8 text-center">
+      <h3 class="text-2xl font-semibold">One simple plan</h3>
+      <div class="mt-2 text-4xl font-semibold">$9<span class="text-base font-normal text-[var(--muted)]">/month</span></div>
+      <p class="mt-2 text-sm text-[var(--muted)]">Professional polish at less than half the cost of other WhatsApp CRMs</p>
+      <ul class="mt-6 space-y-2 text-sm text-left text-[var(--muted)]">
+        <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>Unlimited scheduled messages</li>
+        <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>Unlimited reminders</li>
+        <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>Smart search & summaries</li>
+        <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>Voice commands</li>
+      </ul>
+      <a href="/login" class="mt-8 inline-block rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-black hover:opacity-90">Start now</a>
+
+      <!-- Trust badges -->
+      <div class="mt-4 flex flex-wrap justify-center gap-3 text-xs text-[var(--muted)]">
+        <span class="rounded-full border border-[var(--border)] px-3 py-1">Privacy-first</span>
+        <span class="rounded-full border border-[var(--border)] px-3 py-1">Cancel anytime</span>
+        <span class="rounded-full border border-[var(--border)] px-3 py-1">Flat pricing</span>
+      </div>
+
+      <p class="mt-3 text-xs text-[var(--muted)]">14-day refund guarantee.</p>
+    </div>
+
+    <!-- Privacy-first reassurance (below pricing) -->
+    <div class="mt-10 text-center">
+      <h4 class="text-lg sm:text-xl font-semibold mb-6">Privacy-first by design</h4>
+      <div class="grid sm:grid-cols-3 gap-4 text-sm">
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+          <strong class="block mb-1 text-[var(--accent)]">Your control</strong>
+          Echo only acts on what you ask it to — it does not scan all your chats.
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+          <strong class="block mb-1 text-[var(--accent)]">Safe handling</strong>
+          Data is encrypted in transit and stored only as long as needed.
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+          <strong class="block mb-1 text-[var(--accent)]">Export anytime</strong>
+          You can download or delete your data whenever you choose.
+        </div>
+      </div>
+      <p class="mt-6 text-xs text-[var(--muted)]">
+        Echo is independent and not affiliated with WhatsApp.  
+        See our <a href="/privacy" class="underline hover:text-[var(--text)]">full privacy policy</a>.
+      </p>
+      
+      <p class="mt-4 text-xs text-[var(--muted)]">
+        Echo integrates with your <strong>Google Calendar, Tasks, and Contacts</strong> (with your consent) 
+        to manage scheduling, to-dos, and invitations — all from WhatsApp.  
+      </p>
+      
+    </div>
+
+  </div>
+</section>
+
+
+
+  <!-- Compliance & reassurance -->
+  <section class="py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid sm:grid-cols-3 gap-4 text-sm">
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">Privacy-first</div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">You control data</div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">Export anytime</div>
+      </div>
+      <p class="mt-4 text-xs text-[var(--muted)]">Echo runs on your own WhatsApp — no extra apps. 
+        Business-grade quality, personal simplicity.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-[var(--border)]">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-[var(--muted)] flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>© <span id="year"></span> Echo</div>
+      <nav class="flex items-center gap-4">
+        <a href="/contact" class="hover:text-[var(--text)]">Contact</a>
+        <a href="/privacy" class="hover:text-[var(--text)]">Privacy</a>
+        <a href="/terms" class="hover:text-[var(--text)]">Terms</a>
+        <a href="/login" class="hover:text-[var(--text)]">Login</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
