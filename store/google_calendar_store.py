@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from googleapiclient.discovery import build
-from context.agents.action_item import ActionItemSummary
+from domain.contracts import ActionItemSummary
 from shared.google_calendar.token_cache import get_cached_credentials
 from shared import time
 

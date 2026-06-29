@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-from context.agents.action_item import ScheduledMessageItem
+from domain.contracts import ScheduledMessageItem
 from db.base import db  # Firestore client
 from google.cloud.firestore_v1.base_document import DocumentSnapshot
 from shared.user import get_user

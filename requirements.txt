@@ -19,3 +19,10 @@ google-auth-httplib2
 google-api-python-client
 websocket-client
 whatsapp-api-client-python
+pydantic
+cachetools
+tiktoken
+httpx
+langsmith
+pytest
+pytest-asyncio

@@ -16,16 +16,10 @@ from langchain.tools import tool
 from langchain_core.runnables import RunnableConfig
 from zoneinfo import ZoneInfo
 
-from adapters.whatsapp.wwebjs.wwebjs_adapter import get_chat_history
-from store.action_item_store import ActionItemStore
-from store.scheduled_messages_store import ScheduledMessageStore
-
-from shared.user import get_user, RECENT_CHATS_LIMIT
-from store.user import UserStore
-
+from domain.contracts import ScheduledMessageItem
+from assistant.tools.helper import build_llm_history
 from langchain_tavily import TavilySearch
-from context.agents.action_item import ScheduledMessageItem
-from agents.echo.tools.helper import build_llm_history, try_add_chat_to_recent_chats
+from shared.user import get_user, normalize_phone
 
 # NEW: analytics
 from shared.observability.metrics import track_tool_call
@@ -115,17 +109,9 @@ def get_items(
         to_date_utc = None
 
     try:
-        if type == "scheduled_messages":
-            store = ScheduledMessageStore()
-            items = store.get_items(user_id, status, from_date_utc, to_date_utc)
-            track_tool_call(
-                user_id=user_id, tool="get_items", op="query", item_type=type,
-                ok=1, latency_ms=int((pytime.time() - start) * 1000)
-            )
-            return _ok({"items": items})
-        elif type == "action_items":
-            store = ActionItemStore()
-            items = store.get_items(user_id, status, from_date_utc, to_date_utc)
+        scheduling = config["configurable"]["scheduling"]
+        if type in ("scheduled_messages", "action_items"):
+            items = scheduling.list_items(user_id, type, status, from_date_utc, to_date_utc)
             track_tool_call(
                 user_id=user_id, tool="get_items", op="query", item_type=type,
                 ok=1, latency_ms=int((pytime.time() - start) * 1000)
@@ -306,7 +292,6 @@ def normalize_chat_id(chat: str) -> str:
     return chat
 
 
-from green_api.chats_history import get_last_messages_for_user
 @tool
 async def search_chat_history(
     config: RunnableConfig, chat_id_to_search: str, chat_name_to_search: str, limit: int = 50
@@ -334,9 +319,8 @@ async def search_chat_history(
     limit = max(1, min(limit, MAX_LIMIT))
 
     try:
-        chat_history = get_last_messages_for_user(user_id, chat_id_to_search, limit)
-        print("search_chat_history: chat_history", chat_history)
-        transcript = format_messages_for_llm(chat_history)
+        messaging = config["configurable"]["messaging"]
+        transcript = messaging.search_history(user_id, chat_id_to_search, limit)
         print("search_chat_history: items", transcript)
     except Exception:
         logging.exception("Failed to fetch chat history for %s", chat_id_to_search)
@@ -347,7 +331,7 @@ async def search_chat_history(
         )
         return _fail("fetch_failed", {"chat_history": []})
 
-    try_add_chat_to_recent_chats(user_id, chat_id_to_search, chat_name_to_search)
+    config["configurable"]["user_ctx"].remember_chat(user_id, chat_id_to_search, chat_name_to_search)
     logging.info("search_chat_history: %s → %s", chat_name_to_search, chat_id_to_search)
 
     results_count = len(transcript)
@@ -376,25 +360,8 @@ def get_candidate_recipient_chat_ids(config: RunnableConfig, recipient_name: str
     try:
         user_id = config["configurable"]["user_id"]
         start = pytime.time()
-        user = get_user(user_id)
-
-        mapping = user.runtime.green_api_contacts
-
-        query = (recipient_name or "").strip().lower()
-        results: List[Tuple[str, str]] = []
-        for n, cid in mapping.items():
-            if not n or not cid:
-                continue
-            if query in n.lower():
-                results.append((n, cid))
-
-        # Sort: prefix match first, then shorter names
-        def sort_key(item: Tuple[str, str]):
-            n = item[0].lower()
-            return (0 if n.startswith(query) else 1, len(n))
-
-        results.sort(key=sort_key)
-        out = [{"name": n, "chat_id": cid} for n, cid in results]
+        messaging = config["configurable"]["messaging"]
+        out = messaging.resolve_recipients(user_id, recipient_name)
 
         track_tool_call(
             user_id=user_id, tool="get_candidate_recipient_chat_ids", op="match",
@@ -411,7 +378,6 @@ def get_candidate_recipient_chat_ids(config: RunnableConfig, recipient_name: str
         )
         return out  # empty on failure
 
-from shared.user import normalize_phone
 # ----------------------
 # process_contact_message
 # ----------------------
@@ -459,61 +425,29 @@ def process_contact_message(config: RunnableConfig, **kwargs) -> dict:
                 print("process_contact_message: invalid_datetime_format", action.scheduled_time)
                 return _fail("invalid_datetime_format", {"item_id": None})
 
-        store = ScheduledMessageStore()
+        scheduling = config["configurable"]["scheduling"]
+        user_ctx = config["configurable"]["user_ctx"]
         action.recipient_chat_id = normalize_phone(action.recipient_chat_id)
-        try_add_chat_to_recent_chats(user_id, action.recipient_chat_id, action.recipient_name)
+        user_ctx.remember_chat(user_id, action.recipient_chat_id, action.recipient_name)
         logging.info("[TOOL] Processing scheduled message for user %s: %s", user_id, action)
 
-        if action.command == "create":
-            item_id = store.save(user_id=user_id, item=action)
-            track_tool_call(
-                user_id=user_id, tool="process_contact_message", op="create", item_type="message",
-                ok=1, latency_ms=int((pytime.time() - start) * 1000)
-            )
-            return _ok({"item_id": item_id})
-
-        if action.command == "update":
-            if not (action.item_id or "").strip():
-                track_tool_call(
-                    user_id=user_id, tool="process_contact_message", op="update", item_type="message",
-                    ok=0, latency_ms=int((pytime.time() - start) * 1000), error_code="missing_item_id"
-                )
-                print("process_contact_message: missing_item_id", action.item_id)
-                return _fail("missing_item_id", {"item_id": None})
-            allowed_updates = {
-                "message": action.message,
-                "scheduled_time": action.scheduled_time,
-                "status": action.status,
-            }
-            store.update(item_id=action.item_id, updates=allowed_updates)
-            track_tool_call(
-                user_id=user_id, tool="process_contact_message", op="update", item_type="message",
-                ok=1, latency_ms=int((pytime.time() - start) * 1000)
-            )
-            return _ok({"item_id": action.item_id})
-
-        if action.command == "delete":
-            if not (action.item_id or "").strip():
-                track_tool_call(
-                    user_id=user_id, tool="process_contact_message", op="delete", item_type="message",
-                    ok=0, latency_ms=int((pytime.time() - start) * 1000), error_code="missing_item_id"
-                )
-                print("process_contact_message: missing_item_id", action.item_id)
-                return _fail("missing_item_id", {"item_id": None})
-            store.delete(item_id=action.item_id)
-            track_tool_call(
-                user_id=user_id, tool="process_contact_message", op="delete", item_type="message",
-                ok=1, latency_ms=int((pytime.time() - start) * 1000)
-            )
-            return _ok({"item_id": action.item_id})
-
-        # Shouldn't reach
-        track_tool_call(
-            user_id=user_id, tool="process_contact_message", op=str(action.command), item_type="message",
-            ok=0, latency_ms=int((pytime.time() - start) * 1000), error_code="unknown_command"
+        result = scheduling.schedule_message(
+            user_id,
+            action.command,
+            item_id=action.item_id,
+            message=action.message,
+            scheduled_time=action.scheduled_time,
+            recipient_name=action.recipient_name,
+            recipient_chat_id=action.recipient_chat_id,
+            status=action.status,
         )
-        print("process_contact_message: unknown_command", action.command)
-        return _fail("unknown_command", {"item_id": None})
+        ok_val = 1 if result.get("ok") else 0
+        track_tool_call(
+            user_id=user_id, tool="process_contact_message", op=action.command, item_type="message",
+            ok=ok_val, latency_ms=int((pytime.time() - start) * 1000),
+            error_code=result.get("code") if not ok_val else None
+        )
+        return _ok({"item_id": result.get("item_id")}) if result.get("ok") else _fail(result.get("error", "unknown"), {"item_id": None})
 
     except Exception:
         logging.exception("[TOOL] Failed to process scheduled message.")

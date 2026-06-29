@@ -1,13 +1,13 @@
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
 
-from context.agents.event_item import EventItem
-from shared.google_calendar.tokens import get_valid_credentials
+from assistant.schemas import EventItem
+from shared.observability.metrics import track_tool_call
+import time as pytime
+
 
 def build_event_body(kwargs: dict) -> dict:
-    """Builds a Google Calendar event body from EventItem kwargs."""
+    """Builds a Google Calendar event body from EventItem kwargs. Kept for backward compat — canonical copy is in infra.services.scheduling_service."""
     body = {
         "summary": kwargs["title"],
         "description": kwargs.get("description"),
@@ -74,60 +74,29 @@ def process_event(config: RunnableConfig, **kwargs) -> dict:
     Supports timed and all-day events.
     Returns: { ok: bool, item_id: str|None, error: str|None, code: str|None }
     """
-    user_id = config["configurable"]["user_id"]
-
+    start = pytime.time()
+    user_id = config["configurable"].get("user_id", "unknown")
     if not user_id:
         return {"ok": False, "item_id": None, "error": "Missing user_id", "code": "no_user"}
 
     try:
-        creds = get_valid_credentials(user_id)
-        if not creds:
-            return {"ok": False, "item_id": None, "error": "No valid credentials", "code": "no_creds"}
-
-        service = build("calendar", "v3", credentials=creds)
-        command = kwargs["command"]
-        event_id = kwargs.get("item_id")
-
-        if command in ["update", "delete"] and not event_id:
-            return {"ok": False, "item_id": None, "error": "Missing event_id", "code": "no_id"}
-
-        if command == "create":
-            body = build_event_body(kwargs)
-            event = service.events().insert(calendarId="primary", body=body).execute()
-            return {"ok": True, "item_id": event["id"], "error": None, "code": None}
-
-        elif command == "update":
-            body = build_event_body(kwargs)
-            event = service.events().patch(calendarId="primary", eventId=event_id, body=body).execute()
-            return {"ok": True, "item_id": event["id"], "error": None, "code": None}
-
-        elif command == "delete":
-            service.events().delete(calendarId="primary", eventId=event_id).execute()
-            return {"ok": True, "item_id": event_id, "error": None, "code": None}
-
-        else:
-            return {"ok": False, "item_id": None, "error": f"Unsupported command: {command}", "code": "bad_command"}
-
-    except ValueError as ve:
-        return {"ok": False, "item_id": None, "error": str(ve), "code": "bad_input"}
+        scheduling = config["configurable"]["scheduling"]
+        result = scheduling.upsert_event(
+            user_id,
+            kwargs["command"],
+            item_id=kwargs.get("item_id"),
+            **{k: v for k, v in kwargs.items() if k not in ("command", "item_id")},
+        )
+        ok_val = 1 if result.get("ok") else 0
+        track_tool_call(user_id=user_id, tool="process_event",
+                        op=kwargs.get("command", "unknown"), item_type="event",
+                        ok=ok_val, latency_ms=int((pytime.time() - start) * 1000),
+                        error_code=result.get("code") if not ok_val else None)
+        return result
     except Exception as e:
+        track_tool_call(user_id=user_id, tool="process_event",
+                        op=kwargs.get("command", "unknown"), item_type="event",
+                        ok=0, latency_ms=int((pytime.time() - start) * 1000),
+                        error_code="internal_error")
         return {"ok": False, "item_id": None, "error": str(e), "code": "exception"}
 
-if __name__ == "__main__":
-    result = process_event.invoke(
-        {
-            "command": "create",
-            "item_type": "event",
-            "title": "Demo Meeting with Sarah",
-            "description": "Testing event creation via Echo",
-            "datetime": "2025-08-28T10:00:00+03:00",
-            "end_datetime": "2025-08-28T11:00:00+03:00",
-            "timezone": "Asia/Jerusalem",
-        },
-        {
-            "configurable": {
-                "user_id": "123"
-            }
-        }
-    )
-    print(result)

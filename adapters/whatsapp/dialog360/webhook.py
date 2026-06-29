@@ -1,12 +1,12 @@
 # adapters/whatsapp/360dialog/webhook.py
 from fastapi import APIRouter, Request
 from adapters.whatsapp.cloudapi.cloud_api_adapter import CloudAPIAdapter
-from agents.main import handleUserInput
 from context.message.raw_message import RawMessage
 from shared.google_tts import transcribe_opus_file, media_duration_seconds
 from shared.user import get_user
+from domain.inbound import InboundMessage
+from infra.app.wiring import assistant, user_ctx
 import os
-from agents.echo.tools.helper import try_add_chat_to_recent_chats
 
 dialog360_router = APIRouter()
 
@@ -21,7 +21,12 @@ adapter = CloudAPIAdapter()
 
 from fastapi import FastAPI, Request, Header, HTTPException
 
-WEBHOOK_SECRET = "3ba86ffb-a96f-4ec0-8e10-d407ced76649"  # must match the one you set at 360dialog
+_webhook_secret = os.getenv("WEBHOOK_SECRET", "")
+if not _webhook_secret:
+    raise ValueError("Missing required environment variable: WEBHOOK_SECRET")
+WEBHOOK_SECRET = _webhook_secret
+
+APP_BASE_URL = os.getenv("APP_BASE_URL", "https://inme-1.onrender.com")
 
 @dialog360_router.post("/webhook/whatsapp")
 async def whatsapp_webhook(request: Request, authorization: str = Header(None)):
@@ -86,7 +91,7 @@ async def whatsapp_webhook(request: Request, authorization: str = Header(None)):
             await adapter.send_message_360dialog(
                 whatsappMessage.sender.phone,
                 "תודה רבה אבל עלייך להירשם למערכת לפני שימוש ראשון. אנא הירשם בכתובת "
-                f"https://inme-1.onrender.com/login?user_id={whatsappMessage.sender.phone}"
+                f"{APP_BASE_URL}/login?user_id={whatsappMessage.sender.phone}"
             )
             os.remove(filename)
             return {"status": "received"}
@@ -129,7 +134,7 @@ async def whatsapp_webhook(request: Request, authorization: str = Header(None)):
     elif whatsappMessage.content.contact:
         contact = whatsappMessage.content.contact
         print(f"📇 Received shared contact: {contact.formatted_name} | {contact.phone}")
-        try_add_chat_to_recent_chats(whatsappMessage.sender.phone, contact.phone, contact.formatted_name)
+        user_ctx.remember_chat(whatsappMessage.sender.phone, contact.phone, contact.formatted_name)
         whatsappMessage.content.text = f"text: הנה פרטי איש הקשר: {contact.formatted_name} ({contact.phone})"
 
     else:
@@ -140,7 +145,13 @@ async def whatsapp_webhook(request: Request, authorization: str = Header(None)):
     # Step 1: send placeholder
     await adapter.send_message_360dialog(whatsappMessage.sender.phone, "חושב רגע...")
 
-    result = await handleUserInput(whatsappMessage, whatsappMessage.sender.phone)
+    inbound = InboundMessage(
+        user_id=whatsappMessage.sender.phone,
+        sender_name=whatsappMessage.sender.name or "",
+        text=whatsappMessage.content.text or "",
+    )
+    ctx = user_ctx.get(whatsappMessage.sender.phone)
+    result = await assistant.handle(inbound, ctx)
     # Step 3: send the real message
     await adapter.send_message_360dialog(whatsappMessage.sender.phone, result)
 

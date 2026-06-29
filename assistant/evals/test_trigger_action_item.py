@@ -1,5 +1,11 @@
+import os
 import pytest
 from shared import time
+
+pytestmark = pytest.mark.skipif(
+    not os.path.exists(".secrets/firebase1.json"),
+    reason="integration test — requires real Firebase credentials (.secrets/firebase1.json)"
+)
 
 from store.action_item_store import ActionItemStore
 from store.scheduled_messages_store import ScheduledMessageStore

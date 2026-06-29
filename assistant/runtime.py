@@ -4,18 +4,18 @@ Echo MVP agent: focused on four core skills with low-friction, confirm-then-comm
 
 from langchain_core.messages import AnyMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.prebuilt import create_react_agent
+from langgraph.prebuilt import create_react_agent  # suppress migration warning via pytest.ini
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
-from agents.echo_2.tools.process_scheduled_message import (
+from assistant.tools.process_scheduled_message import (
     process_contact_message,
     get_candidate_recipient_chat_ids,
     search_chat_history,
     get_items,
 )
-from agents.echo_2.tools.process_reminder import process_reminder
-from agents.echo_2.tools.process_task import process_task
-from agents.echo_2.tools.process_event import process_event
+from assistant.tools.process_reminder import process_reminder
+from assistant.tools.process_task import process_task
+from assistant.tools.process_event import process_event
 
 from shared.user import get_user, checkpointer
 
@@ -164,7 +164,31 @@ def build_echo_2_agent(model: str = "gpt-4.1"):
     return agent
 
 
-# Optional module-level instance (import if you prefer a singleton):
+# Module-level singleton:
 echo_2_agent = build_echo_2_agent()
 
-__all__ = ["build_echo_2_agent", "echo_2_agent"]
+
+class EchoAssistant:
+    """Implements domain.ports.Assistant — wraps the LangGraph echo_2_agent."""
+
+    def __init__(self, scheduling, messaging, user_ctx):
+        self._scheduling = scheduling
+        self._messaging = messaging
+        self._user_ctx = user_ctx
+
+    async def handle(self, msg, ctx) -> str:
+        """Receive an InboundMessage + UserContext and return the agent reply string."""
+        from assistant.glue import run
+        return await run(
+            echo_2_agent,
+            msg,
+            ctx,
+            {
+                "scheduling": self._scheduling,
+                "messaging": self._messaging,
+                "user_ctx": self._user_ctx,
+            },
+        )
+
+
+__all__ = ["build_echo_2_agent", "echo_2_agent", "EchoAssistant"]

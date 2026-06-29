@@ -5,8 +5,7 @@ import time as pytime
 from langchain.tools import tool
 from langchain_core.runnables import RunnableConfig
 
-from store.action_item_store import ActionItemStore
-from context.agents.action_item import ActionItem
+from assistant.schemas import ActionItem
 from shared.observability.metrics import track_tool_call
 
 def _fail(msg: str, code: Optional[str] = None):
@@ -40,14 +39,13 @@ def _validate(action: ActionItem):
 def process_self_action(config: RunnableConfig, **kwargs) -> dict:
     """
     Process an action item (reminder, task, or event).
-    Firestore-only MVP.
     Returns: { ok: bool, item_id: str|None, error: str|None, code: str|None }
     """
     start = pytime.time()
     try:
         action = ActionItem(**kwargs)
         user_id = config["configurable"]["user_id"]
-        store = ActionItemStore()
+        scheduling = config["configurable"]["scheduling"]
 
         err = _validate(action)
         if err:
@@ -58,60 +56,28 @@ def process_self_action(config: RunnableConfig, **kwargs) -> dict:
             return _fail(err)
 
         dt_str = _normalize_dt_to_str(getattr(action, "datetime", None))
-        op_id = getattr(action, "op_id", None)  # <-- use if present
+        op_id = getattr(action, "op_id", None)
 
-        if action.command == "create":
-            item_id = store.create_action_item(
-                user_id=user_id,
-                item_type=action.item_type,
-                title=action.title,
-                description=action.description,
-                dt=dt_str,
-                location=action.location,
-                op_id=op_id,   # <-- pass through
-            )
-            latency_ms = int((pytime.time() - start) * 1000)
-            track_tool_call(user_id=user_id, tool="process_self_action",
-                            op="create", item_type=action.item_type,
-                            ok=1, latency_ms=latency_ms)
-            return _ok(item_id)
+        result = scheduling._upsert_action_item(
+            user_id,
+            action.command,
+            action.item_type,
+            item_id=action.item_id,
+            title=action.title,
+            description=action.description,
+            dt=dt_str,
+            location=getattr(action, "location", None),
+            status=action.status,
+            op_id=op_id,
+        )
 
-        if action.command == "update":
-            updated = store.update_action_item(
-                user_id=user_id,
-                item_id=action.item_id,
-                item_type=action.item_type,
-                title=action.title,
-                description=action.description,
-                dt=dt_str,
-                location=action.location,
-                status=action.status,
-            )
-            latency_ms = int((pytime.time() - start) * 1000)
-            track_tool_call(user_id=user_id, tool="process_self_action",
-                            op="update", item_type=action.item_type,
-                            ok=1 if updated else 0, latency_ms=latency_ms,
-                            error_code=None if updated else "not_found")
-            if not updated:
-                return _fail("not_found", code="not_found")
-            return _ok(action.item_id)
-
-        if action.command == "delete":
-            deleted = store.delete_action_item(user_id=user_id, item_id=action.item_id)
-            latency_ms = int((pytime.time() - start) * 1000)
-            track_tool_call(user_id=user_id, tool="process_self_action",
-                            op="delete", item_type=action.item_type,
-                            ok=1 if deleted else 0, latency_ms=latency_ms,
-                            error_code=None if deleted else "not_found")
-            if not deleted:
-                return _fail("not_found", code="not_found")
-            return _ok(action.item_id)
-
+        ok_val = 1 if result.get("ok") else 0
         latency_ms = int((pytime.time() - start) * 1000)
         track_tool_call(user_id=user_id, tool="process_self_action",
                         op=action.command, item_type=action.item_type,
-                        ok=0, latency_ms=latency_ms, error_code="unknown_command")
-        return _fail("unknown_command")
+                        ok=ok_val, latency_ms=latency_ms,
+                        error_code=result.get("code") if not ok_val else None)
+        return result
 
     except Exception as e:
         latency_ms = int((pytime.time() - start) * 1000)

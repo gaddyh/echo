@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-from context.agents.action_item import ActionItemSummary
+from domain.contracts import ActionItemSummary
 from db.base import db  # Firestore client
 from shared import time  # provides parse_datetime(dt_str) and utcnow()/utcnow?; we'll guard TZ
 

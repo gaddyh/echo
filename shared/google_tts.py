@@ -44,8 +44,9 @@ def transcribe_opus_file(input_path: str, phrase_hints: list[str] = None) -> str
             speech_contexts=[speech.SpeechContext(phrases=phrase_hints[:GOOGLE_TTS_PHRASE_HINTS_LIMIT])] if phrase_hints else []
         )
         
+        _stt_creds_file = os.getenv("GOOGLE_SPEECH_CREDENTIALS", "tami-463501-a8053925ce03.json")
         speech_creds = service_account.Credentials.from_service_account_file(
-            os.path.join(os.getenv("SECRETS_DIR", ".secrets"), "tami-463501-a8053925ce03.json")
+            os.path.join(os.getenv("SECRETS_DIR", ".secrets"), _stt_creds_file)
         )
         client = speech.SpeechClient(credentials=speech_creds)
         response = client.recognize(config=config, audio=audio)

@@ -27,8 +27,8 @@ SCOPES = [
     "https://www.googleapis.com/auth/contacts.readonly"
 ]
 
-REDIRECT_URI = "https://inme-1.onrender.com/google/oauth2callback"  # Set this to your deployed domain
-REDIRECT_URI = "http://localhost:8000/google/oauth2callback"  # Set this to your deployed domain
+_app_base_url = os.getenv("APP_BASE_URL", "https://inme-1.onrender.com")
+REDIRECT_URI = f"{_app_base_url}/google/oauth2callback"
 
 @google_router.get("/google/auth-url")
 async def google_auth_url(user_id: str):

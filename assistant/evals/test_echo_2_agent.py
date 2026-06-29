@@ -1,12 +1,12 @@
 import time
 from collections import defaultdict
-from agents.echo.core import echo_agent
+from assistant.runtime import echo_2_agent
 
 # Sample test messages in Hebrew
 TEST_CASES = [
     ("תזכיר לי להתקשר למרפאה מחר בבוקר", "process_self_action"),
     ("קבע משימה לסיים את המצגת עד יום שני", "process_self_action"),
-    ("צור אירוע לשיעור יוגה ביום שישי בשש בערב", "process_self_action"),
+    ("צור אירוע לשיעור יוגה ביום שישי בשש בערב. בלי מיקום.בלי משתתפים", "process_event"),
     ("הוסף תזכורת לקנות מצרכים הערב", "process_self_action"),
     ("תכנון משימה לבדוק את החוזה בשבוע הבא", "process_self_action"),
 
@@ -26,21 +26,31 @@ TEST_CASES = [
 ]
 
 
+from langchain_core.messages import AIMessage, HumanMessage
+
 def extract_tool_and_command(messages):
     tool_used = None
     command_used = None
     for msg in messages:
-        if hasattr(msg, "tool_calls"):
+        if isinstance(msg, AIMessage) and msg.tool_calls:
             for call in msg.tool_calls:
-                if "name" in call:
-                    tool_used = call["name"]
-                    args = call.get("args", {})
-                    command_used = args.get("command")
+                tool_used = call.get("name")
+                args = call.get("args", {})
+                command_used = args.get("command")
     return tool_used, command_used
+
+USER_PROMPT = """
+Context:
+Now is: {now}
+Input source: {input_source}
+
+User message:
+{user_message}
+"""
 
 
 def run_tests():
-    agent = echo_agent
+    agent = echo_2_agent
 
     cold_start = time.time()
     agent.invoke(
@@ -48,6 +58,9 @@ def run_tests():
         {"configurable": {
             "user_id": "test",
             "user_name": "tester",
+            "recent_chats": {},
+            "contacts": {},
+            "name2chat_id": {},
             "thread_id": "coldstart"
         }}
     )
@@ -60,26 +73,41 @@ def run_tests():
 
     tool_durations = defaultdict(list)
 
-    for idx, (message, expected_tool) in enumerate(TEST_CASES):
+    for idx, (message, expected_tool) in enumerate(TEST_CASES[2:3]):
         start = time.time()
         # First turn
+        # ---- Build prompt with input_source ----
+        import datetime
+        userPrompt = USER_PROMPT.format(
+            now=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            user_message=message,
+            input_source="text",   # 👈 include in SYSTEM_PROMPT context
+        )
+
+        input = {
+            "messages": [
+                {"content": userPrompt, "role": "user"},
+            ]
+        }
+
         result = agent.invoke(
-            {"messages": [{"role": "user", "content": message}]},
-            {"configurable": {
-                "user_id": "test-12sdffsdf3",
+            input,
+            config={"configurable": {
+                "user_id": "123",
                 "user_name": "test",
                 "thread_id": "threadId",
                 "name2chat_id": {},
+                "recent_chats": {},
                 "contacts": {},
                 "chat_id": "123",
             }}
         )
+        print(result)
+        tool_used, command_used = extract_tool_and_command(result["messages"])
 
-        tool_used, command_used = extract_tool_and_command(result.get("messages", []))
-
-        # If no tool yet but confirmation asked → simulate "כן"
+        # If no tool yet but confirmation asked → simulate "כן" 
         if not tool_used:
-            assistant_texts = [m.get("content") for m in result.get("messages", []) if m.get("role") == "assistant"]
+            assistant_texts = [m.content for m in result.get("messages", []) if isinstance(m, AIMessage)]
             if any(t and "לאשר" in t for t in assistant_texts):
                 second = agent.invoke(
                     {"messages": [
@@ -88,11 +116,12 @@ def run_tests():
                         {"role": "user", "content": "כן"}
                     ]},
                     {"configurable": {
-                        "user_id": "test-12sdffsdf3",
+                        "user_id": "123",
                         "user_name": "test",
                         "thread_id": "threadId",
                         "name2chat_id": {},
                         "contacts": {},
+                        "recent_chats": {},
                         "chat_id": "123",
                     }}
                 )
@@ -109,6 +138,20 @@ def run_tests():
             print(f"❌ [{idx+1}] FAIL | Expected: {expected_tool}, Got: {tool_used} | {message} ({duration:.2f}s)")
             failed += 1
             print(result["messages"])
+
+        result = agent.invoke(
+            {"messages": [{"role": "user", "content": "כן"}]},
+            config={"configurable": {
+                "user_id": "123",
+                "user_name": "test",
+                "thread_id": "threadId",
+                "name2chat_id": {},
+                "contacts": {},
+                "recent_chats": {},
+                "chat_id": "123",
+            }}
+        )
+        print(result)
 
     print(f"\nSummary: {passed} passed, {failed} failed")
     print(f"Overall Avg duration: {total_duration / len(TEST_CASES):.2f}s")
