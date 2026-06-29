@@ -16,7 +16,7 @@ It is built around a single LangGraph ReAct agent (GPT‑4.1), backed by Firesto
 | **Tasks & lists** | "תעשה רשימת סופר" → "תוסיף חלב לרשימת הסופר" | Tasks with sub‑tasks (`parent_id`), completion tracking. |
 | **Calendar events** | "תקבע פגישה עם רותם מחר ב‑10" | Google Calendar events with start/end, recurrence, participants, reminders. |
 | **Scheduled / outgoing messages** | "שלח לנועה הודעה מחר ב‑8: 'בהצלחה במבחן!'" | Resolves the contact, **confirms**, then sends the message from the user's *own* WhatsApp number at the scheduled time. |
-| **Chat‑history search** | "מה אמרתי לאייל לגבי התקציב?" | Searches a specific WhatsApp conversation. |
+| **Chat‑history search** | "מה אמרתי לאייל לגבי התקציב?" | Searches a specific WhatsApp conversation (via Green API). |
 | **Voice notes** | (send an audio message) | Transcribed via Google Cloud Speech (`he‑IL`) and treated like text. |
 | **Contact sharing** | (forward a contact card) | Saved into the user's recent‑chats index for easier name resolution. |
 
@@ -46,7 +46,7 @@ It is built around a single LangGraph ReAct agent (GPT‑4.1), backed by Firesto
             ┌──────────────────────────┼───────────────────────────┐
             ▼                          ▼                           ▼
    reminders / tasks /        scheduled message to          chat‑history search
-   events  (Firestore)        another person                (wwebjs) + Tavily web
+   events  (Firestore)        another person                (Green API) + Tavily web
             │                          │
             ▼                          ▼
    ┌──────────────────┐      ┌────────────────────────────┐
@@ -62,34 +62,57 @@ It is built around a single LangGraph ReAct agent (GPT‑4.1), backed by Firesto
 
 ---
 
-## Components
+## Architecture & Layout
 
-### `apps/` — FastAPI web layer (`bot.py`)
-The HTTP entrypoint. Serves the marketing/legal pages (`index`, `login`, `privacy`, `terms`, `contact`) via Jinja2 templates, and the onboarding API:
+The latest refactor moved the project to a clean, layered (ports‑and‑adapters) structure. The dependency direction is **infra → assistant → domain**, with `domain` depending on nothing.
 
-- `POST /login-user` — validates an Israeli number (`972XXXXXXXXX`), claims a WhatsApp instance, returns a QR code to scan.
-- `GET /instance-state` — polls whether the WhatsApp instance is `authorized`.
-- `GET /refresh-contact` — re‑syncs a user's contacts and sends a welcome template.
-- Mounts routers for the 360dialog webhook, Google OAuth, Calendar, and Contacts.
-- Defines (but, via a `TODO`, does **not** yet wire in) background loops for the event trigger and the instance pool.
+```
+domain/      pure contracts — no framework or I/O dependencies
+assistant/   the agent: prompt, tools, orchestration glue, evals
+infra/       the FastAPI app, dependency wiring, and service implementations
+adapters/    WhatsApp provider adapters (inbound webhooks + send)
+green_api/   per‑user "send as the user" + warm instance pool
+store/       Firestore repositories
+shared/      cross‑cutting services (scheduler, calendar, STT, metrics)
+context/     typed domain models (Pydantic) + conversation memory window
+db/          Firebase / Firestore initialization
+apps/        deprecated launcher shim
+agents/      deprecated entrypoint shim
+```
+
+### `domain/` — contracts (no dependencies)
+- `inbound.py` — neutral DTOs: `InboundMessage` and `UserContext` dataclasses that the infra layer produces and the agent consumes.
+- `ports.py` — `Protocol` interfaces the agent depends on: `SchedulingService`, `MessagingService`, `UserContextService`, and `Assistant`.
+- `contracts.py` — Pydantic models such as `ActionItemSummary` and `ScheduledMessageItem` (recipient `chat_id` must match `.+@(c|g)\.us`).
+
+### `assistant/` — the brain
+- `runtime.py` — builds the LangGraph ReAct agent (the big Hebrew system prompt, the tool list, per‑user prompt injection of recent chats, the windowed checkpointer) and exposes `EchoAssistant`, which implements `domain.ports.Assistant`.
+- `glue.py` — per‑turn orchestration: parses the `stt:` / `text:` input source, builds the user prompt with the current time, invokes the agent, and records token/cost/latency metrics.
+- `tools/` — the tools: `process_reminder`, `process_task`, `process_event`, `process_scheduled_message` (which also holds `process_contact_message`, `get_candidate_recipient_chat_ids`, `search_chat_history`, `get_items`), plus `process_action_item.py` and `helper.py`.
+- `schemas.py` — tool argument / payload schemas.
+- `evals/` — the TDD harness that asserts the agent picks the **right tool** for ~16 Hebrew prompts (reminders, contact messages, chat search, and a "tell me a joke" → fallback case).
+
+### `infra/` — app, wiring, services
+- `app/server.py` — the FastAPI app. Serves the marketing/legal pages (`index`, `login`, `privacy`, `terms`, `contact`) via Jinja2, plus the onboarding API:
+  - `POST /login-user` — validates an Israeli number (`972XXXXXXXXX`), claims a WhatsApp instance, returns a QR code to scan.
+  - `GET /instance-state` — polls whether the WhatsApp instance is `authorized`.
+  - `GET /refresh-contact` — re‑syncs a user's contacts and sends a welcome template.
+  - Mounts routers for the 360dialog webhook, Google OAuth, Calendar, and Contacts.
+  - Defines a `lifespan` that **does** start the background event‑trigger loop and the instance‑pool worker (see Caveats for the one loop still commented out).
+- `app/wiring.py` — constructs the singletons (`SchedulingService`, `MessagingService`, `UserContextService`) and binds them into a single `EchoAssistant`. Also reads the opt‑in LangSmith tracing env vars.
+- `services/` — concrete implementations of the domain ports: `scheduling_service.py`, `messaging_service.py` (recipient resolution + Green‑API chat‑history search), `user_context_service.py`.
 
 ### `adapters/whatsapp/` — provider adapters
 - `whatsapp_adapter.py` — abstract base (`parse_incoming`, `send_message`, `detect_direction`, …).
-- `dialog360/webhook.py` — the live inbound webhook: message dedup (TTL cache), voice‑note download + transcription, contact‑card handling, "thinking…" placeholder, then the agent reply.
+- `dialog360/webhook.py` — the live inbound webhook at `POST /webhook/whatsapp`: bearer‑token check against `WEBHOOK_SECRET`, message dedup (TTL cache), voice‑note download + transcription, contact‑card handling, "thinking…" placeholder, then the agent reply.
 - `cloudapi/` — Cloud API adapter + `x‑Hub‑Signature` verification.
-- `wwebjs/` — reads chat history from a `whatsapp-web.js` Node service (used by chat‑history search).
-
-### `agents/` — the brain
-- `echo_v2/core.py` — builds the LangGraph ReAct agent: the big Hebrew system prompt, the tool list, the per‑user prompt injection (recent chats), and a windowed checkpointer.
-- `echo_v2/tools/` — the tools: `process_reminder`, `process_task`, `process_event`, `process_scheduled_message` (which also holds `process_contact_message`, `get_candidate_recipient_chat_ids`, `search_chat_history`, `get_items`).
-- `main.py` — `handleUserInput()`: wraps each turn, parses the `stt:` / `text:` input source, builds the user prompt with the current time, invokes the agent, and records token/cost/latency metrics.
 
 ### `green_api/` — sending "as the user"
 - `instance_mng/` — create, list, QR, config, and a transactional **pool** (`claim_instance` / `release_instance`) so users get a *warm* instance instantly instead of waiting for one to spin up.
-- `send.py`, `groups.py`, `contacts.py`, `chats_history.py` — WhatsApp actions on behalf of the user.
+- `send.py`, `groups.py`, `contacts.py`, `chats_history.py` — WhatsApp actions on behalf of the user (chat‑history search now reads through here).
 
 ### `context/` — typed domain models (Pydantic)
-`BaseActionItem` → `ReminderItem` / `TaskItem` / `EventItem`, plus `ScheduledMessageItem` (recipient `chat_id` must match `.+@(c|g)\.us`), message/identity/media primitives, and `windowed_InMemorySaver.py` (the conversation‑memory window).
+Message / identity / media primitives, `scheduled_message.py`, `scheduled_event.py`, `user.py`, `response_format.py`, and `windowed_InMemorySaver.py` (the conversation‑memory window).
 
 ### `store/` — Firestore repositories
 `action_item_store`, `scheduled_messages_store`, `delivery_mng_store` (send status + retries), `people_store`, `chat_index`, `google_calendar_store`, `user`.
@@ -98,14 +121,15 @@ The HTTP entrypoint. Serves the marketing/legal pages (`index`, `login`, `privac
 - `event_trigger.py` — the scheduler loop (see below).
 - `google_calendar/` — OAuth, calendar, people/contacts, token cache.
 - `google_tts.py` — `ffmpeg` → `wav` → Google Cloud Speech (`he‑IL`), using the user's recent‑chat names as phrase hints.
-- `user.py`, `token_tracker.py`, `delivery_mng.py`, `monitor_disconnected_users.py`.
+- `user.py`, `token_tracker.py`, `delivery_mng.py`, `result.py`, `time.py`.
 - `observability/` — GA4 metrics (`track_agent_run`, `track_stt_transcribed`, `track_tool_call`), logging, tracing.
 
 ### `db/base.py`
 Initializes Firebase Admin / Firestore from a service‑account file under `SECRETS_DIR`.
 
-### `tests/`
-TDD harness that asserts the agent picks the **right tool** for ~16 Hebrew prompts (reminders, contact messages, chat search, and a "tell me a joke" → fallback case).
+### Deprecated shims
+- `apps/bot.py` — keeps `python apps/bot.py` and `uvicorn apps.bot:app` working; it just re‑exports `infra.app.server:app`.
+- `agents/main.py` — keeps the old `handleUserInput()` callable working; it now delegates to the wired `EchoAssistant`.
 
 ---
 
@@ -135,6 +159,8 @@ A loop runs roughly every 10 seconds and looks back over the last 10 minutes for
 - **Scheduled messages:** sent from the user's own number via Green API.
 - Each send is tracked in a delivery‑status store with retry counting. Scheduled messages retry up to **5** times; on final failure Echo messages the user with the undelivered text so they can send it manually.
 
+The loop is started automatically by the app's `lifespan` (in `infra/app/server.py`), alongside the warm‑instance pool worker.
+
 ---
 
 ## Data & Integrations
@@ -144,14 +170,15 @@ A loop runs roughly every 10 seconds and looks back over the last 10 minutes for
 - **Speech‑to‑text:** Google Cloud Speech (`speech_v1p1beta1`, `he‑IL`).
 - **Web search:** Tavily (available to the message tool).
 - **Calendar / contacts:** Google Calendar + People APIs (OAuth).
-- **WhatsApp:** 360dialog Cloud API (inbound) + Green API (outbound, per‑user) + a `whatsapp-web.js` Node service (history).
+- **WhatsApp:** 360dialog Cloud API (inbound) + Green API (outbound, per‑user, and chat‑history search).
 - **Analytics:** Google Analytics 4 measurement protocol for agent runs, STT, and tool calls — with token and USD cost estimation.
+- **Tracing (optional):** LangSmith, opt‑in via `LANGCHAIN_TRACING_V2` + `LANGCHAIN_API_KEY`.
 
 ---
 
 ## Running It
 
-> ⚠️ This is an early‑stage / work‑in‑progress repo (2 commits). See **Caveats** below — a couple of import paths don't yet match the folder names, so expect to do a little wiring before it boots cleanly.
+> ⚠️ Early‑stage / work‑in‑progress repo. The most recent commit ("config refactor") reorganized the codebase into the layered layout above and resolved the previous import‑path and webhook‑secret issues. See **Caveats** for what's still rough.
 
 ### Prerequisites
 - Python 3.11+ and **ffmpeg** on the host (for voice transcription).
@@ -160,7 +187,6 @@ A loop runs roughly every 10 seconds and looks back over the last 10 minutes for
 - Google OAuth credentials (Calendar + People).
 - A 360dialog WhatsApp number (inbound) and a Green API partner account (outbound).
 - An OpenAI API key and a Tavily API key.
-- (Optional) a running `whatsapp-web.js` Node service for chat‑history search.
 
 ### Install
 ```bash
@@ -168,41 +194,74 @@ pip install -r requirements.txt
 # ensure ffmpeg is installed, e.g.  sudo apt-get install ffmpeg
 ```
 
-### Secrets & environment
-Place credential files under `.secrets/` (overridable with `SECRETS_DIR`):
-- `.secrets/firebase1.json` — Firebase service account
-- `.secrets/<google‑speech>.json` — Google Cloud STT service account
+### Configure environment
+Copy the template and fill it in. Locally the code loads variables from `.venv/.env`
+(that's the path passed to `load_dotenv(...)` in the source), so:
 
-Useful environment variables seen in the code:
+```bash
+cp .example.env .venv/.env
+# then edit .venv/.env
+```
 
-| Var | Default | Meaning |
-| --- | --- | --- |
-| `PORT` | `8000` | Web server port |
-| `SECRETS_DIR` | `.secrets` | Where credential JSONs live |
-| `LLM_MODEL_NAME` | `gpt-4_1` | Model label for metrics |
-| `LLM_PRICE_PER_M_TOKEN` | `6.00` | Cost estimate per 1M tokens |
-| `STT_PRICE_PER_MIN_USD` | `0.024` | Cost estimate per STT minute |
-| `CONTACTS_REFRESH_SEC` | `3600` | Contact re‑sync interval |
-| `NODE_URL` | `http://localhost:3000` | `whatsapp-web.js` service URL |
+In hosted environments (e.g. Render), set the same variables as platform env vars
+instead of using a file. See **`.example.env`** for the full annotated list. The
+required ones are `OPENAI_API_KEY`, `TAVILY_API_KEY`, `GREEN_API_PARTNER_TOKEN`,
+`WEBHOOK_SECRET`, and the 360dialog Cloud‑API trio (`D360_API_KEY`,
+`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`).
 
-Also expects `OPENAI_API_KEY`, `TAVILY_API_KEY`, and Green API partner credentials (`GREEN_API_PARTNER_API_URL`, `GREEN_API_PARTNER_TOKEN`) to be configured.
+### Secrets (credential files, not env vars)
+Place credential JSONs under `.secrets/` (overridable with `SECRETS_DIR`):
+- Firebase service account (loaded by `db/base.py`).
+- Google Cloud STT service account (filename set via `GOOGLE_SPEECH_CREDENTIALS`).
+
+### Environment variables
+
+| Var | Required | Default | Meaning |
+| --- | --- | --- | --- |
+| `OPENAI_API_KEY` | ✅ | — | LLM access (langchain‑openai) |
+| `TAVILY_API_KEY` | ✅ | — | Web search tool |
+| `GREEN_API_PARTNER_TOKEN` | ✅ | — | Green API partner token (raises if missing) |
+| `WEBHOOK_SECRET` | ✅ | — | Inbound webhook bearer secret (raises if missing) |
+| `D360_API_KEY` | ✅ | — | 360dialog API key (sending) |
+| `WHATSAPP_PHONE_NUMBER_ID` | ✅ | — | Cloud API phone number id |
+| `WHATSAPP_ACCESS_TOKEN` | ✅ | — | Cloud API access token |
+| `SECRETS_DIR` | | `.secrets` | Where credential JSONs live |
+| `GOOGLE_SPEECH_CREDENTIALS` | | `tami-…json` | STT service‑account filename under `SECRETS_DIR` |
+| `APP_BASE_URL` | | `https://inme-1.onrender.com` | Public base URL (login links, OAuth redirect) |
+| `PORT` | | `8000` | Web server port |
+| `GREEN_API_PARTNER_API_URL` | | `https://api.green-api.com` | Green API base URL |
+| `WHATSAPP_APP_SECRET` | | `your_app_secret` | x‑Hub‑Signature verification |
+| `NODE_URL` | | `http://localhost:3000` | Node service base URL (instance deployment URLs) |
+| `CONTACTS_REFRESH_SEC` | | `3600` | Contact re‑sync interval |
+| `POOL_SIZE` | | `1` | Warm Green API instances to keep ready |
+| `LLM_MODEL_NAME` | | `gpt-4_1` | Model label for metrics |
+| `LLM_PRICE_PER_M_TOKEN` | | `6.00` | Cost estimate per 1M tokens |
+| `STT_PRICE_PER_MIN_USD` | | `0.024` | Cost estimate per STT minute |
+| `GA4_MEASUREMENT_ID` / `GA4_API_SECRET` / `GA4_COLLECT_URL` / `GA4_DEBUG` / `GA4_CLIENT_SALT` | | (built‑in) | Google Analytics 4 reporting |
+| `LANGCHAIN_TRACING_V2` / `LANGCHAIN_API_KEY` / `LANGCHAIN_PROJECT` | | off | LangSmith tracing (opt‑in) |
+| `INTEGRATION_TEST_USER_ID` | | — | Real user id for opt‑in integration tests |
 
 ### Start the server
 ```bash
+uvicorn infra.app.server:app --host 0.0.0.0 --port 8000
+# or, via the compatibility shim:
 python apps/bot.py
-# or
-uvicorn apps.bot:app --host 0.0.0.0 --port 8000
 ```
 
 ### Onboard a user
 1. Open `/login?user_id=972XXXXXXXXX`.
 2. Scan the returned QR with WhatsApp (links a Green API instance to that user).
-3. Point your 360dialog WhatsApp number's webhook at `POST /webhook/whatsapp`.
+3. Point your 360dialog WhatsApp number's webhook at `POST /webhook/whatsapp`
+   (it must send `Authorization: Bearer <WEBHOOK_SECRET>`).
 4. Message the Echo number — try *"תזכיר לי להתקשר מחר ב‑9"*.
 
-### Run the tests
+### Tests
+- **Agent evals** (right‑tool selection, offline): under `assistant/evals/`.
+- **Integration tests** (`tests/test_int_*.py`): hit real services — Firebase, Green API, 360dialog, STT, scheduler — and need the matching credentials/env (and `INTEGRATION_TEST_USER_ID`).
+
 ```bash
-pytest
+pytest                       # everything
+pytest assistant/evals       # just the agent evals
 ```
 
 ---
@@ -211,16 +270,18 @@ pytest
 
 - **Two WhatsApp providers, on purpose.** Inbound conversation flows through 360dialog (one shared business number), while *outbound* scheduled messages go out via each user's *own* Green API instance — so a "remind my mom" message actually arrives from the user, not a bot. That asymmetry is the cleverest part of the design.
 - **A warm instance pool.** Spinning up a WhatsApp instance is slow, so a background worker keeps a pool of pre‑created instances in Firestore and hands them out transactionally (`claim_instance` / `release_instance`) — login feels instant.
+- **Clean layering.** The refactor split the code into `domain` (contracts), `assistant` (the agent), and `infra` (app + service implementations), with `domain` depending on nothing. The agent talks to the outside world only through the `domain.ports` Protocols.
 - **Opinionated minimalism.** The Hebrew design notes are almost a manifesto: one agent, no handoffs, ≤5 tools, TDD. The codebase mostly honors it — only the scheduled‑message flow is treated as a real sub‑agent.
 - **STT with context hints.** Voice transcription feeds the user's recent‑chat *names* in as phrase hints, so it's better at hearing the right contact names.
 - **Cost‑aware from day one.** Every agent run and every transcription is metered into GA4 with estimated USD cost.
 
 ### Caveats (it's a WIP)
-- **Module paths don't match folders yet.** Code imports `agents.echo.core`, `agents.echo_2.core`, and `agents.echo_2.tools…`, but the actual directory is `agents/echo_v2/`. A rename pass (or matching aliases) is needed before it imports cleanly — the project is clearly mid‑refactor between `echo`, `echo_2`, and `echo_v2`.
-- **Background loops aren't wired in.** `bot.py` builds a `lifespan` with the trigger loop and pool worker, but the app is instantiated as plain `FastAPI()` (`# … lifespan) TODO`), so the scheduler/pool worker won't start automatically as committed.
-- **Secrets in source.** The 360dialog webhook secret is hard‑coded, and credential filenames are referenced directly. These should move to environment variables / a secrets manager before any real deployment.
+- **One background loop is still off.** The `lifespan` starts the event‑trigger loop and the pool worker, but the periodic `contacts_reload_loop` is commented out — contact refresh currently happens via the `/refresh-contact` endpoint rather than on a timer.
+- **`apps/bot.py` and `agents/main.py` are shims.** They re‑export the real entrypoints for backward compatibility; new code should import from `infra.app.server` and `infra.app.wiring`.
+- **Some defaults are baked in.** GA4 IDs and a default STT credential filename have hard‑coded fallbacks in code; override them via env (`.example.env`) before any real deployment.
 - **Israel‑only onboarding.** Login validation hard‑requires a `972…` number.
+- **`.example.env` is git‑ignored.** The repo's `.gitignore` matches `*.env`, so this template won't be committed unless you force‑add it (`git add -f .example.env`) or add a `!.example.env` negation rule.
 
 ---
 
-*Languages: Python (~77%) + HTML (~23%). Hosting referenced in‑code: Render (`inme‑1.onrender.com`).*
+*Languages: Python + HTML. Hosting referenced in‑code: Render (`inme‑1.onrender.com`).*
