@@ -20,16 +20,6 @@ It is built around a single LangGraph ReAct agent (GPT‑4.1), backed by Firesto
 | **Voice notes** | (send an audio message) | Transcribed via Google Cloud Speech (`he‑IL`) and treated like text. |
 | **Contact sharing** | (forward a contact card) | Saved into the user's recent‑chats index for easier name resolution. |
 
-**Design intent (from `הבנות טכניות.txt`, "Technical Understandings"):**
-
-1. Exactly **one** user‑facing agent — no intent classification, no handoffs.
-2. *Agent‑as‑tool*: deeper jobs are exposed to the main agent as tools.
-3. The system prompt stays in one coherent conceptual space.
-4. **≤ 5 tools per agent.**
-5. **TDD** — understand the prompt's needs → few‑shot examples → real tests.
-6. Don't over‑engineer: reminder / task / event are plain tools, **not** agents. Only the *scheduled‑message* flow is a specialized sub‑agent.
-
----
 
 ## How It Works (high level)
 
