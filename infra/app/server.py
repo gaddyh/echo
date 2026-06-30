@@ -14,6 +14,8 @@ from shared.google_calendar.calendar import calendar_router, contacts_router
 from adapters.whatsapp.cloudapi.cloud_api_adapter import CloudAPIAdapter
 from db.base import db
 
+from adapters.whatsapp.dialog360.webhook import dialog360_router
+
 # -----------------------------------------------------------------------------
 # Logging
 # -----------------------------------------------------------------------------
